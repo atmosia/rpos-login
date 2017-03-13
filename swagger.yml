@@ -1,0 +1,142 @@
+swagger: '2.0'
+
+info:
+  version: "0.1"
+  title: rPOS Login API
+  description: |
+    API for the login microservice
+
+host: login.rpos.net
+basePath: /
+
+schemes: ["https"]
+
+securityDefinitions:
+  RPosSession:
+    type: apiKey
+    name: token
+    in: header
+
+paths:
+  /:
+    get:
+      description: Returns the server version and health check
+      produces:
+        - application/json
+      responses:
+        200:
+          description: The server status
+          schema:
+            type: object
+            properties:
+              version:
+                type: string
+                description: A semver complaint version string
+              health:
+                type: string
+                description: The current state of the server
+                enum: [
+                  "OK",
+                  "WARNING",
+                  "ERROR"
+                ]
+
+  /user/{email}:
+    put:
+      description: Creates a user
+      security:
+        - RPosSession: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          type: string
+          description: The email of the user to create
+      produces:
+        - application/json
+      responses:
+        201:
+          description: The user has been created
+        403:
+          description: You do not have authorization to create accounts
+        409:
+          description: The user account already exists
+
+  /session:
+    post:
+      description: Creates a session for the provided user
+      produces:
+        - application/json
+      parameters:
+        - name: User Details
+          in: body
+          required: true
+          description: The email and password of the user to create a session
+                       for
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                description: The email of the user
+              password:
+                type: string
+                description: The password of the user
+
+      responses:
+        200:
+          description: The user successfully had a session created
+          schema:
+            type: object
+            properties:
+              session_key:
+                type: string
+                description: A session key
+
+        400:
+          description: The users does not exist or the password was incorrect
+
+  /session/{session_id}:
+    get:
+      description: Used to verify the existence of a session
+      produces:
+        - application/json
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          type: string
+          description: The session ID to validate
+      responses:
+        200:
+          description: The session key has been validated and is correct
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                description: The email of the logged in user
+              session_key:
+                type: string
+                description: The requested session key, or the new session key
+                             if a redirect was issued
+        301:
+          description: The old session key has been removed, the Location
+                       header links to the new one
+        404:
+          description: The session key does not exist
+
+    delete:
+      description: Used to destroy a session
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          type: string
+          description: The session ID to remove
+      responses:
+        204:
+          description: The session key has been removed
+        404:
+          description: The session key does not exist
+
