@@ -118,8 +118,10 @@ generate_token(Seed) ->
 valid_login(Conn, User, Password) ->
     Query = "SELECT password FROM rpos_user WHERE email = $1",
     case epgsql:equery(Conn, Query, [User]) of
-        {ok, _Col, [Pass]} -> erlpass:match(Password, Pass);
-        {ok, _Col, []}     -> false
+        {ok, _Col, [{Pass}]} ->
+            io:format("~p:~p~n", [Password, Pass]),
+            erlpass:match(Password, Pass);
+        {ok, _Col, []}       -> false
     end.
 
 add_session(Conn, Email) ->

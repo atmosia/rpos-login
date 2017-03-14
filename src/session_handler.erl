@@ -23,3 +23,9 @@ content_types_accepted(Req, State) ->
 
 from_json(Req, State) ->
     {{true, "/session/" ++ maps:get(session, State)}, Req, State}.
+
+read_all_body(Req) -> read_all_body(cowboy_req:read_body(Req), <<>>).
+
+read_all_body({ok, Data, Req}, Acc) -> {<<Acc/binary, Data/binary>>, Req};
+read_all_body({more, Data, Req}, Acc) ->
+    read_all_body(cowboy_req:read_body(Req), <<Acc/binary, Data/binary>>).

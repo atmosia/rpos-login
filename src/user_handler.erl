@@ -15,8 +15,8 @@ allowed_methods(Req, State) ->
 is_conflict(Req, State) ->
     Email = cowboy_req:binding(email, Req),
     case rpos_login:register_user(Email) of
-        ok                     -> {false, Req, State};
-        {error, invalid_login} -> {true, Req, State}
+        ok                   -> {false, Req, State};
+        {error, user_exists} -> {true, Req, State}
     end.
 
 content_types_accepted(Req, State) ->

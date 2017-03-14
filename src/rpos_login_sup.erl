@@ -28,7 +28,16 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_all, 0, 1}, []} }.
+    Flags = #{strategy  => one_for_all,
+              intensity => 3,
+              period    => 60},
+    Children = [#{id       => rpos_login_server,
+                  start    => {rpos_login_server, start_link, []},
+                  restart  => transient,
+                  shutdown => 5,
+                  type     => worker}
+               ],
+    {ok, {Flags, Children}}.
 
 %%====================================================================
 %% Internal functions
