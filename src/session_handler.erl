@@ -6,7 +6,6 @@
 init(Req, _State) -> {cowboy_rest, Req, #{}}.
 
 is_authorized(Req0, State) ->
-    %% TODO; check for valid user
     {Body, Req1} = read_all_body(Req0),
     JSON = jiffy:decode(Body, [return_maps]),
     case rpos_login:login(maps:get(<<"email">>, JSON),
