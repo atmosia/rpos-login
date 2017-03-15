@@ -9,6 +9,8 @@
 -export([init/1, terminate/2, code_change/3]).
 -export([handle_call/3, handle_cast/2, handle_info/2]).
 
+-define(TIMEFMT, "~4w~2..0w~2..0wT~2..0w:~2..0w:~9..0f").
+
 -record(state, {connection}).
 
 start_link() -> gen_server:start_link(?MODULE, [], []).
@@ -135,9 +137,7 @@ generate_token(Seed) ->
 valid_login(Conn, User, Password) ->
     Query = "SELECT password FROM rpos_user WHERE email = $1",
     case epgsql:equery(Conn, Query, [User]) of
-        {ok, _Col, [{Pass}]} ->
-            io:format("~p:~p~n", [Password, Pass]),
-            erlpass:match(Password, Pass);
+        {ok, _Col, [{Pass}]} -> erlpass:match(Password, Pass);
         {ok, _Col, []}       -> false
     end.
 
@@ -169,8 +169,11 @@ set_user_password(Conn, User, Password, Token) ->
 fetch_user_session(Conn, Session) ->
     Query = "SELECT email, expires FROM rpos_session WHERE session_key=$1",
     case epgsql:equery(Conn, Query, [Session]) of
-        {ok, [{Email, Expiry}]} -> {ok, #{session => Session,
-                                          email => Email,
-                                          expires => Expiry}};
+        {ok, _Cols, [{Email, {{Yr, Mn, Da}, {Hr, Mi, Se}}}]} ->
+            IOList = io_lib:format(?TIMEFMT, [Yr, Mn, Da, Hr, Mi, Se]),
+            ExpiryStr = lists:flatten(IOList),
+            {ok, #{session => Session,
+                   email => Email,
+                   expires => binary:list_to_bin(ExpiryStr)}};
         _ -> {error, no_session}
     end.

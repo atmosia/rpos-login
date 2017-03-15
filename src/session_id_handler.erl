@@ -48,7 +48,7 @@ to_json(Req, State) ->
 from_json(Req0, State) ->
     case State of
         #{error := invalid_login} ->
-            Resp = jiffy:encode(#{error => "invalid login"}),
+            Resp = jiffy:encode(#{error => <<"invalid login">>}),
             Req1 = cowboy_req:set_resp_body(Resp, Req0),
             {false, Req1, State};
         #{new_session := Session} ->
@@ -76,7 +76,7 @@ new_session(Req0, State) ->
     case rpos_login:login(Session,
                           maps:get(<<"email">>, JSON),
                           maps:get(<<"password">>, JSON)) of
-        ok  -> {false, Req1, State#{new_session => Session}};
+        {ok, _Session} -> {false, Req1, State#{new_session => Session}};
         {error, invalid_login} ->
             {false, Req1, State#{error => invalid_login}};
         {error, session_exists} -> {true, Req1, State}
