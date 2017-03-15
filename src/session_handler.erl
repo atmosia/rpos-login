@@ -1,9 +1,11 @@
 -module(session_handler).
 
 -export([init/2, is_authorized/2, allowed_methods/2]).
--export([content_types_accepted/2, from_json/2]).
+-export([content_types_accepted/2, from_json/2, resource_exists/2]).
 
 init(Req, _State) -> {cowboy_rest, Req, #{}}.
+
+resource_exists(Req, State) -> {false, Req, State}.
 
 is_authorized(Req0, State) ->
     {Body, Req1} = read_all_body(Req0),

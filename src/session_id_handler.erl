@@ -26,6 +26,6 @@ to_json(Req, State) ->
     {jiffy:encode(Session), Req, State}.
 
 delete_resource(Req, State) ->
-    #{session := Session} = State,
-    rpos_login:logout(Session),
+    Session = cowboy_req:binding(session_id, Req),
+    ok = rpos_login:logout(Session),
     {true, Req, State}.

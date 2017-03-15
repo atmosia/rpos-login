@@ -15,8 +15,8 @@
 
 start_link() -> gen_server:start_link(?MODULE, [], []).
 
-start_link(ConfigPath) ->
-    gen_server:start_link(?MODULE, [ConfigPath], []).
+start_link(Config) ->
+    gen_server:start_link(?MODULE, [Config], []).
 
 register_user(Pid, Email) ->
     gen_server:call(Pid, {register, Email}).
@@ -33,14 +33,9 @@ set_password(Pid, User, Password, Token) ->
 fetch_session(Pid, Token) ->
     gen_server:call(Pid, {fetch, Token}).
 
-init(Args) ->
-    Path = proplists:get_value(config_file, Args, "config.json"),
-    case read_config(Path) of
-        {ok, Config} ->
-            gen_server:cast(self(), {connect, Config}),
-            {ok, #state{}};
-        {error, Error} -> {stop, Error}
-    end.
+init([Config]) ->
+    gen_server:cast(self(), {connect, Config}),
+    {ok, #state{}}.
 
 terminate(_Reason, _State) -> ok.
 
@@ -60,28 +55,11 @@ handle_call({fetch, Session}, _From, State) ->
     {reply, fetch_user_session(State#state.connection, Session), State}.
 
 handle_cast({connect, Config}, State) ->
-    {ok, Connection} = epgsql:connect(Config),
+    #{db := DBConfig} = Config,
+    {ok, Connection} = epgsql:connect(DBConfig),
     {noreply, State#state{connection=Connection}}.
 
 handle_info(_Message, State) -> {noreply, State}.
-
-read_config(Path) ->
-    case file:read_file(Path) of
-        {ok, Data}      ->
-            {Config} = jiffy:decode(Data, []),
-            {ok, lists:foldl(fun parse_config/2, [], Config)};
-        {error, enoent} -> {error, no_config_file}
-    end.
-
-parse_config({<<"dbhost">>, Host}, Acc) ->
-    [{host, binary:bin_to_list(Host)}|Acc];
-parse_config({<<"dbport">>, Port}, Acc) -> [{port, Port}|Acc];
-parse_config({<<"dbuser">>, User}, Acc) ->
-    [{username, binary:bin_to_list(User)}|Acc];
-parse_config({<<"dbpass">>, Pass}, Acc) ->
-    [{password, binary:bin_to_list(Pass)}|Acc];
-parse_config({<<"dbname">>, Name}, Acc) ->
-    [{database, binary:bin_to_list(Name)}|Acc].
 
 create_user(Conn, Email) ->
     Token = generate_token(Email),
@@ -102,7 +80,10 @@ login_user(Conn, Email, Password) ->
         false -> {error, invalid_login}
     end.
 
-logout_user(_Conn, _Session) -> throw(unimplemented).
+logout_user(Conn, Session) ->
+    Query = "DELETE FROM rpos_session WHERE session_key=$1",
+    {ok, _N} = epgsql:equery(Conn, Query, [Session]),
+    ok.
 
 generate_token(Seed) ->
     IOList = io_lib:format("~s~w~n", [Seed, erlang:monotonic_time()]),
