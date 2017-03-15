@@ -8,8 +8,8 @@
 -behaviour(application).
 
 %% Public API
--export([register_user/1, login/2, logout/1, valid_token/1]).
--export([set_password/3]).
+-export([register_user/1, login/2, login/3, logout/1, valid_token/1]).
+-export([set_password/3, fetch_session/1]).
 
 %% Application callbacks
 -export([start/2, stop/1]).
@@ -26,6 +26,9 @@ register_user(Email) ->
 login(Email, Password) ->
     rpos_login_server:login(server_pid(), Email, Password).
 
+login(Session, Email, Password) ->
+    rpos_login_server:login(server_pid(), Session, Email, Password).
+
 logout(Session) ->
     rpos_login_server:logout(server_pid(), Session).
 
@@ -34,6 +37,9 @@ valid_token(Session) ->
 
 set_password(User, Password, Token) ->
     rpos_login_server:set_password(server_pid(), User, Password, Token).
+
+fetch_session(Session) ->
+    rpos_login_server:fetch_session(server_pid(), Session).
 
 %%====================================================================
 %% application callbacks
