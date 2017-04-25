@@ -65,7 +65,6 @@ server_pid() ->
     [{_, Pid, _, _}] = supervisor:which_children(rpos_login_sup),
     Pid.
 
-
 read_config(Path) ->
     case file:read_file(Path) of
         {ok, Data}      ->
